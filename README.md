@@ -1,36 +1,71 @@
-# 🚀 Getting started with Strapi
+# Strapi 5 CMS Entwicklungsumgebung
 
-Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
+Eine vollständige Strapi 5 Headless CMS Entwicklungsumgebung mit TypeScript-Unterstützung.
 
-### `develop`
+## 📋 Voraussetzungen
 
-Start your Strapi application with autoReload enabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-develop)
+- Node.js >= 20.x
+- npm >= 6.x
 
-```
+## 🚀 Schnellstart
+
+### Entwicklungsserver starten
+
+Starten Sie Ihre Strapi-Anwendung mit aktiviertem autoReload:
+
+```bash
 npm run develop
-# or
-yarn develop
 ```
 
-### `start`
+Das Admin Panel ist verfügbar unter: http://localhost:1337/admin
 
-Start your Strapi application with autoReload disabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-start)
+### Produktionsserver starten
 
-```
+Starten Sie Ihre Strapi-Anwendung ohne autoReload:
+
+```bash
 npm run start
-# or
-yarn start
 ```
 
-### `build`
+### Admin Panel erstellen
 
-Build your admin panel. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-build)
+Erstellen Sie Ihr Admin Panel für die Produktion:
 
-```
+```bash
 npm run build
-# or
-yarn build
 ```
+
+## 📁 Projektstruktur
+
+```
+strapi-admin/
+├── config/          # Konfigurationsdateien
+├── database/        # Datenbank-Dateien (SQLite)
+├── public/          # Öffentliche Assets
+├── src/
+│   ├── api/         # API-Definitionen
+│   ├── components/  # Wiederverwendbare Komponenten
+│   └── index.ts     # Einstiegspunkt
+├── .env             # Umgebungsvariablen
+└── package.json     # Projektabhängigkeiten
+```
+
+## 🔧 Verfügbare Befehle
+
+- `npm run develop` - Entwicklungsmodus mit autoReload
+- `npm run start` - Produktionsmodus
+- `npm run build` - Admin Panel bauen
+- `npm run strapi` - Strapi CLI anzeigen
+- `npm run console` - Strapi Console öffnen
+
+## 📚 Wichtige Funktionen
+
+- **Content-Type Builder**: Erstellen Sie Content-Typen über das Admin Panel
+- **REST API**: Automatisch generierte REST API für alle Content-Typen
+- **GraphQL**: GraphQL API verfügbar über Plugin
+- **Medien-Bibliothek**: Upload und Verwaltung von Assets
+- **Rollen & Berechtigungen**: Feingranulare Zugriffskontrolle
+- **TypeScript**: Vollständige TypeScript-Unterstützung
 
 ## ⚙️ Deployment
 
