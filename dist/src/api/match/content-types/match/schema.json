@@ -1,0 +1,49 @@
+{
+    "kind": "collectionType",
+    "collectionName": "matches",
+    "info": {
+        "singularName": "match",
+        "pluralName": "matches",
+        "displayName": "Match",
+        "description": "Volleyball matches"
+    },
+    "options": {
+        "draftAndPublish": true
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "date": {
+            "type": "datetime",
+            "required": true
+        },
+        "homeGame": {
+            "type": "boolean"
+        },
+        "team": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::team.team",
+            "inversedBy": "matches"
+        },
+        "opponent": {
+            "type": "string"
+        },
+        "location": {
+            "type": "string"
+        },
+        "result": {
+            "type": "string"
+        },
+        "report": {
+            "type": "richtext"
+        },
+        "gallery": {
+            "type": "media",
+            "multiple": true,
+            "required": false,
+            "allowedTypes": [
+                "images"
+            ]
+        }
+    }
+}

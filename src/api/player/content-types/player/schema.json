@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "players",
+  "info": {
+    "singularName": "player",
+    "pluralName": "players",
+    "displayName": "Player",
+    "description": "Volleyball players"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "firstName": {
+      "type": "string",
+      "required": true
+    },
+    "lastName": {
+      "type": "string",
+      "required": true
+    },
+    "birthDate": {
+      "type": "date"
+    },
+    "position": {
+      "type": "enumeration",
+      "enum": [
+        "Zuspiel",
+        "Diagonal",
+        "Außen",
+        "Mitte",
+        "Libero"
+      ]
+    },
+    "jerseyNumber": {
+      "type": "integer",
+      "min": 1,
+      "max": 99
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "teams": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::team.team",
+      "mappedBy": "players"
+    }
+  }
+}

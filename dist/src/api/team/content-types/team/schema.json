@@ -1,0 +1,63 @@
+{
+    "kind": "collectionType",
+    "collectionName": "teams",
+    "info": {
+        "singularName": "team",
+        "pluralName": "teams",
+        "displayName": "Team",
+        "description": "Volleyball teams"
+    },
+    "options": {
+        "draftAndPublish": true
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "name": {
+            "type": "string",
+            "required": true
+        },
+        "description": {
+            "type": "richtext"
+        },
+        "category": {
+            "type": "enumeration",
+            "required": true,
+            "enum": [
+                "Damen",
+                "Herren",
+                "Jugend",
+                "Mixed"
+            ]
+        },
+        "image": {
+            "type": "media",
+            "multiple": false,
+            "required": false,
+            "allowedTypes": [
+                "images"
+            ]
+        },
+        "season": {
+            "type": "string",
+            "default": "2024/2025"
+        },
+        "players": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::player.player",
+            "inversedBy": "teams"
+        },
+        "coaches": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::coach.coach",
+            "inversedBy": "teams"
+        },
+        "matches": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::match.match",
+            "mappedBy": "team"
+        }
+    }
+}

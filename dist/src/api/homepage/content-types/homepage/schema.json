@@ -1,0 +1,45 @@
+{
+    "kind": "singleType",
+    "collectionName": "homepage",
+    "info": {
+        "singularName": "homepage",
+        "pluralName": "homepages",
+        "displayName": "Homepage",
+        "description": "Homepage content and featured items"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "heroImage": {
+            "type": "media",
+            "multiple": false,
+            "required": false,
+            "allowedTypes": [
+                "images"
+            ]
+        },
+        "heroTitle": {
+            "type": "string"
+        },
+        "heroText": {
+            "type": "text"
+        },
+        "featuredTeams": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::team.team"
+        },
+        "featuredNews": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::news-article.news-article"
+        },
+        "seo": {
+            "type": "component",
+            "repeatable": false,
+            "component": "shared.seo"
+        }
+    }
+}

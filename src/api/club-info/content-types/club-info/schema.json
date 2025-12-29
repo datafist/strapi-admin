@@ -1,0 +1,46 @@
+{
+  "kind": "singleType",
+  "collectionName": "club_info",
+  "info": {
+    "singularName": "club-info",
+    "pluralName": "club-infos",
+    "displayName": "Club Info",
+    "description": "General club information"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "clubName": {
+      "type": "string",
+      "required": true,
+      "default": "Volleyballverein"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "address": {
+      "type": "text"
+    },
+    "email": {
+      "type": "email"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "about": {
+      "type": "richtext"
+    },
+    "socialLinks": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.social-link"
+    }
+  }
+}
