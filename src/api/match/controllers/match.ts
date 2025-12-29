@@ -8,7 +8,7 @@ export default factories.createCoreController('api::match.match', ({ strapi }) =
   async find(ctx) {
     ctx.query = {
       ...ctx.query,
-      populate: ctx.query.populate || { homeTeam: true, awayTeam: true, gallery: true }
+      populate: ctx.query.populate || { team: true, gallery: true }
     };
     return super.find(ctx);
   },
@@ -16,7 +16,7 @@ export default factories.createCoreController('api::match.match', ({ strapi }) =
   async findOne(ctx) {
     ctx.query = {
       ...ctx.query,
-      populate: ctx.query.populate || { homeTeam: true, awayTeam: true, gallery: true }
+      populate: ctx.query.populate || { team: true, gallery: true }
     };
     return super.findOne(ctx);
   }
