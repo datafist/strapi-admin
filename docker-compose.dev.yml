@@ -1,0 +1,33 @@
+version: '3.8'
+
+# Docker Compose für lokale Entwicklung mit PostgreSQL
+# Nutzung: docker-compose -f docker-compose.dev.yml up -d
+
+services:
+  # PostgreSQL Datenbank
+  postgres:
+    image: postgres:16-alpine
+    container_name: strapi-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: strapi_dev
+      POSTGRES_USER: strapi
+      POSTGRES_PASSWORD: strapi_dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - strapi-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U strapi -d strapi_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  strapi-dev-network:
+    driver: bridge

@@ -1,560 +1,407 @@
-# Strapi 5 Deployment auf Railway mit PostgreSQL
+# Strapi 5 Deployment auf Hostinger VPS mit Docker
 
-## 1. Projekt für Railway vorbereiten
+## Übersicht
 
-### PostgreSQL-Abhängigkeit installieren:
+Diese Anleitung beschreibt das Deployment von Strapi 5 auf einem Hostinger VPS mit:
+- **Docker** für Container-Orchestrierung
+- **PostgreSQL** als Datenbank
+- **Nginx** als Reverse Proxy
+- **Let's Encrypt** für SSL-Zertifikate
+- **Domain**: `api.florianbirkenberger.de`
+
+---
+
+## Voraussetzungen
+
+- Hostinger VPS mit Ubuntu 22.04+ oder Debian 11+
+- Domain `florianbirkenberger.de` mit DNS-Zugriff
+- SSH-Zugang zum VPS
+- Lokal: Git, Node.js (für Secrets-Generierung)
+
+---
+
+## 1. VPS vorbereiten
+
+### 1.1 Mit SSH verbinden
 ```bash
-npm install pg
+ssh root@DEINE_VPS_IP
 ```
 
-**Optional für lokale Entwicklung mit SQLite:**
+### 1.2 System aktualisieren
 ```bash
-npm install better-sqlite3
+apt update && apt upgrade -y
 ```
 
-### GitHub Repository vorbereiten
-
-1. **Änderungen committen**:
+### 1.3 Docker installieren
 ```bash
-git add .
-git commit -m "Prepare for Railway deployment"
-git push origin main
+# Docker GPG Key hinzufügen
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# Docker Repository hinzufügen
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Docker installieren
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Docker starten und aktivieren
+systemctl start docker
+systemctl enable docker
+
+# Docker Compose v2 prüfen
+docker compose version
 ```
 
-2. **Prüfen Sie .gitignore** (sollte enthalten):
-```
-.env
-.env.production
-.env.railway
-node_modules
-.tmp
-.cache
-build
-dist
-.strapi
-*.db
-```
-
-## 2. Railway Deployment - Schritt für Schritt
-
-### Schritt 1: Railway-Account erstellen
-1. Gehe zu https://railway.app
-2. Klicke **"Start a New Project"** oder **"Login with GitHub"**
-3. Autorisiere Railway für GitHub-Zugriff
-4. Du landest im Railway-Dashboard
-
-### Schritt 2: Neues Projekt erstellen
-
-1. Klicke im Dashboard auf **"+ New Project"**
-2. Wähle **"Deploy from GitHub repo"**
-3. Suche nach deinem Repository `strapi-admin`
-4. Klicke auf das Repository zum Auswählen
-5. Railway beginnt automatisch mit dem ersten Deployment
-
-**WICHTIG**: Dieses erste Deployment wird fehlschlagen - das ist normal! Wir müssen erst die Datenbank und Umgebungsvariablen hinzufügen.
-
-### Schritt 3: PostgreSQL-Datenbank hinzufügen
-
-1. Im Projekt-Dashboard siehst du dein Strapi-Service (grünes Rechteck)
-2. Klicke oben rechts auf **"+ New"**
-3. Wähle **"Database"**
-4. Klicke **"Add PostgreSQL"**
-5. Railway erstellt eine PostgreSQL-Instanz und verknüpft sie automatisch
-
-**Railway macht automatisch**:
-- Erstellt eine PostgreSQL-Datenbank
-- Generiert Zugangsdaten
-- Setzt die Umgebungsvariable `DATABASE_URL` in deinem Strapi-Service
-
-**Verknüpfung prüfen**:
-1. Klicke auf dein **Strapi-Service** (nicht die Datenbank)
-2. Gehe zum Tab **"Variables"**
-3. Du solltest `DATABASE_URL` bereits in der Liste sehen (automatisch hinzugefügt)
-
-### Schritt 4: Umgebungsvariablen setzen - DETAILLIERT
-
-#### 4.1 Secrets lokal generieren
-Öffne dein Terminal lokal und generiere **6 zufällige Schlüssel**:
-
+### 1.4 Firewall konfigurieren
 ```bash
-# Führe diesen Befehl 6 Mal aus:
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+```
+
+---
+
+## 2. DNS konfigurieren
+
+Im Hostinger DNS-Manager oder deinem Domain-Provider:
+
+| Typ | Name | Wert | TTL |
+|-----|------|------|-----|
+| A | api | DEINE_VPS_IP | 3600 |
+
+**Beispiel:**
+- `api.florianbirkenberger.de` → `123.456.789.0`
+
+**Warte 5-30 Minuten** bis DNS propagiert ist. Prüfen mit:
+```bash
+dig api.florianbirkenberger.de +short
+```
+
+---
+
+## 3. Projekt auf VPS klonen
+
+### 3.1 Projekt-Verzeichnis erstellen
+```bash
+mkdir -p /opt/strapi
+cd /opt/strapi
+```
+
+### 3.2 Repository klonen
+```bash
+git clone https://github.com/DEIN_USERNAME/strapi-admin.git .
+```
+
+### 3.3 Certbot-Verzeichnisse erstellen
+```bash
+mkdir -p certbot/conf certbot/www
+```
+
+---
+
+## 4. Umgebungsvariablen konfigurieren
+
+### 4.1 Secrets lokal generieren (auf deinem PC)
+```bash
+# Führe 6 Mal aus und notiere jeden Wert:
 node -e "console.log(require('crypto').randomBytes(16).toString('base64'))"
 ```
 
-Beispiel-Output jedes Mal:
-```
-XyZ123abc456def789==
-```
-
-Kopiere alle 6 generierten Werte in eine Notiz.
-
-#### 4.2 Variablen in Railway eintragen
-
-1. Klicke auf dein **Strapi-Service** (grünes Rechteck)
-2. Klicke auf den Tab **"Variables"**
-3. Du siehst bereits `DATABASE_URL` (von PostgreSQL)
-
-**Trage nun folgende Variablen ein (eine nach der anderen):**
-
----
-
-**Variable 1: NODE_ENV**
-- Klicke **"+ New Variable"** (oben rechts)
-- **Variable Name**: `NODE_ENV`
-- **Value**: `production`
-- Klicke **"Add"**
-
----
-
-**Variable 2: DATABASE_CLIENT**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `DATABASE_CLIENT`
-- **Value**: `postgres`
-- Klicke **"Add"**
-
----
-
-**Variable 3: APP_KEYS**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `APP_KEYS`
-- **Value**: [Dein 1. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 4: API_TOKEN_SALT**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `API_TOKEN_SALT`
-- **Value**: [Dein 2. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 5: ADMIN_JWT_SECRET**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `ADMIN_JWT_SECRET`
-- **Value**: [Dein 3. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 6: TRANSFER_TOKEN_SALT**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `TRANSFER_TOKEN_SALT`
-- **Value**: [Dein 4. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 7: ENCRYPTION_KEY**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `ENCRYPTION_KEY`
-- **Value**: [Dein 5. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 8: JWT_SECRET**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `JWT_SECRET`
-- **Value**: [Dein 6. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-#### 4.3 Variablen-Checkliste
-
-Du solltest jetzt **9 Umgebungsvariablen** haben:
-- ✅ `DATABASE_URL` (automatisch von Railway)
-- ✅ `NODE_ENV`
-- ✅ `DATABASE_CLIENT`
-- ✅ `APP_KEYS`
-- ✅ `API_TOKEN_SALT`
-- ✅ `ADMIN_JWT_SECRET`
-- ✅ `TRANSFER_TOKEN_SALT`
-- ✅ `ENCRYPTION_KEY`
-- ✅ `JWT_SECRET`
-
----
-
-### Schritt 5: Deployment-Einstellungen überprüfen
-
-1. Klicke auf dein Strapi-Service
-2. Gehe zum Tab **"Settings"**
-3. Scrolle zu **"Deploy"**
-
-**Prüfe folgende Einstellungen**:
-- **Build Command**: Sollte `npm run build` sein (automatisch erkannt)
-- **Start Command**: Sollte `npm run start` sein (automatisch erkannt)
-- **Root Directory**: Sollte `/` sein
-
-**Falls nicht korrekt**:
-- Bei **Custom Build Command**: `npm install && npm run build`
-- Bei **Custom Start Command**: `npm run start`
-
----
-
-### Schritt 6: Deployment neu starten
-
-1. Gehe zum Tab **"Deployments"**
-2. Das erste Deployment ist wahrscheinlich fehlgeschlagen (rot)
-3. Klicke oben rechts auf **"Deploy"** oder warte auf Auto-Redeploy
-4. Railway startet ein neues Deployment mit allen Umgebungsvariablen
-
-**Logs in Echtzeit ansehen**:
-1. Klicke auf das laufende Deployment
-2. Sieh dir die Logs an:
-   - **Building**: npm install, npm run build
-   - **Deploying**: npm run start, Strapi-Initialisierung
-3. Warte bis du siehst:
-   ```
-   [YYYY-MM-DD HH:MM:SS.SSS] info: Server started on http://0.0.0.0:XXXX
-   ```
-
-**Deployment dauert ca. 3-5 Minuten.**
-
----
-
-### Schritt 7: Domain/URL erhalten
-
-1. Gehe zurück zu deinem Strapi-Service
-2. Klicke auf den Tab **"Settings"**
-3. Scrolle zu **"Networking"** oder **"Public Networking"**
-4. Klicke **"Generate Domain"**
-5. Railway generiert eine URL wie:
-   ```
-   strapi-admin-production-a1b2.up.railway.app
-   ```
-6. Diese URL ist öffentlich erreichbar
-
-**Optional: Custom Domain**:
-- Klicke **"Custom Domain"**
-- Füge deine Domain hinzu (z.B. `api.deinedomain.de`)
-- Folge den DNS-Anweisungen
-
----
-
-### Schritt 8: Admin-Panel öffnen und testen
-
-1. **Öffne die Admin-URL**:
-   ```
-   https://strapi-admin-production-a1b2.up.railway.app/admin
-   ```
-
-2. **Ersten Admin-User erstellen**:
-   - Du siehst das Registrierungsformular
-   - Fülle aus:
-     - First name
-     - Last name
-     - Email
-     - Password (mind. 8 Zeichen)
-   - Klicke **"Let's start"**
-
-3. **API testen**:
-   - REST API: `https://strapi-admin-production-a1b2.up.railway.app/api/achievements`
-   - Admin Panel: `https://strapi-admin-production-a1b2.up.railway.app/admin`
-
----
-
-### Schritt 9: Automatische Deployments (Continuous Deployment)
-
-**Ab jetzt**: Jeder `git push` zu deinem GitHub-Repository triggert automatisch ein neues Deployment auf Railway!
-
-**Workflow**:
-1. Lokal Änderungen machen
-2. `git add .`
-3. `git commit -m "Update"`
-4. `git push origin main`
-5. Railway baut und deployt automatisch
-6. Du siehst neues Deployment im **Deployments**-Tab
-
----
-
-### Schritt 10: Logs und Monitoring
-
-**Logs ansehen**:
-1. Klicke auf dein Strapi-Service
-2. Gehe zum Tab **"Deployments"**
-3. Klicke auf ein Deployment → Siehst Build + Runtime Logs
-
-**Oder Live-Logs**:
-1. Klicke auf dein Service
-2. Oben rechts: **"View Logs"**
-3. Siehst Live-Stream der Logs
-
-**Metriken**:
-1. Gehe zum Tab **"Metrics"**
-2. Siehst CPU, Memory, Network Usage
-
----
-
-### Railway Kosten & Limits (Stand 2026)
-
-**Free Tier**:
-- $5 Startguthaben pro Monat
-- Unbegrenzte Projekte
-- 500 Stunden Laufzeit/Monat
-- 100 GB Bandbreite
-- 1 GB RAM pro Service
-
-**Für Strapi typisch**:
-- ~$3-5/Monat bei geringem Traffic
-- PostgreSQL-Datenbank: ~$1-2/Monat
-
-**Upgrade auf Pro** (falls nötig):
-- $20/Monat
-- Mehr RAM, CPU, Bandbreite
-
----
-
-**Variable 1: NODE_ENV**
-- Klicke **"+ New Variable"** (oben rechts)
-- **Variable Name**: `NODE_ENV`
-- **Value**: `production`
-- Klicke **"Add"**
-
----
-
-**Variable 2: DATABASE_CLIENT**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `DATABASE_CLIENT`
-- **Value**: `postgres`
-- Klicke **"Add"**
-
----
-
-**Variable 3: APP_KEYS**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `APP_KEYS`
-- **Value**: [Dein 1. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 4: API_TOKEN_SALT**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `API_TOKEN_SALT`
-- **Value**: [Dein 2. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 5: ADMIN_JWT_SECRET**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `ADMIN_JWT_SECRET`
-- **Value**: [Dein 3. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 6: TRANSFER_TOKEN_SALT**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `TRANSFER_TOKEN_SALT`
-- **Value**: [Dein 4. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 7: ENCRYPTION_KEY**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `ENCRYPTION_KEY`
-- **Value**: [Dein 5. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-**Variable 8: JWT_SECRET**
-- Klicke **"+ New Variable"**
-- **Variable Name**: `JWT_SECRET`
-- **Value**: [Dein 6. generierter Schlüssel]
-- Klicke **"Add"**
-
----
-
-#### 4.3 Variablen-Checkliste
-
-Du solltest jetzt **9 Umgebungsvariablen** haben:
-- ✅ `DATABASE_URL` (automatisch von Railway)
-- ✅ `NODE_ENV`
-- ✅ `DATABASE_CLIENT`
-- ✅ `APP_KEYS`
-- ✅ `API_TOKEN_SALT`
-- ✅ `ADMIN_JWT_SECRET`
-- ✅ `TRANSFER_TOKEN_SALT`
-- ✅ `ENCRYPTION_KEY`
-- ✅ `JWT_SECRET`
-
----
-
-### Schritt 5: Deployment-Einstellungen überprüfen
-
-1. Klicke auf dein Strapi-Service
-2. Gehe zum Tab **"Settings"**
-3. Scrolle zu **"Deploy"**
-
-**Prüfe folgende Einstellungen**:
-- **Build Command**: Sollte `npm run build` sein (automatisch erkannt)
-- **Start Command**: Sollte `npm run start` sein (automatisch erkannt)
-- **Root Directory**: Sollte `/` sein
-
-**Falls nicht korrekt**:
-- Bei **Custom Build Command**: `npm install && npm run build`
-- Bei **Custom Start Command**: `npm run start`
-
----
-
-### Schritt 6: Deployment neu starten
-
-1. Gehe zum Tab **"Deployments"**
-2. Das erste Deployment ist wahrscheinlich fehlgeschlagen (rot)
-3. Klicke oben rechts auf **"Deploy"** oder warte auf Auto-Redeploy
-4. Railway startet ein neues Deployment mit allen Umgebungsvariablen
-
-**Logs in Echtzeit ansehen**:
-1. Klicke auf das laufende Deployment
-2. Sieh dir die Logs an:
-   - **Building**: npm install, npm run build
-   - **Deploying**: npm run start, Strapi-Initialisierung
-3. Warte bis du siehst:
-   ```
-   [YYYY-MM-DD HH:MM:SS.SSS] info: Server started on http://0.0.0.0:XXXX
-   ```
-
-**Deployment dauert ca. 3-5 Minuten.**
-
----
-
-### Schritt 7: Domain/URL erhalten
-
-1. Gehe zurück zu deinem Strapi-Service
-2. Klicke auf den Tab **"Settings"**
-3. Scrolle zu **"Networking"** oder **"Public Networking"**
-4. Klicke **"Generate Domain"**
-5. Railway generiert eine URL wie:
-   ```
-   strapi-admin-production-a1b2.up.railway.app
-   ```
-6. Diese URL ist öffentlich erreichbar
-
-**Optional: Custom Domain**:
-- Klicke **"Custom Domain"**
-- Füge deine Domain hinzu (z.B. `api.deinedomain.de`)
-- Folge den DNS-Anweisungen
-
----
-
-### Schritt 8: Admin-Panel öffnen und testen
-
-1. **Öffne die Admin-URL**:
-   ```
-   https://strapi-admin-production-a1b2.up.railway.app/admin
-   ```
-
-2. **Ersten Admin-User erstellen**:
-   - Du siehst das Registrierungsformular
-   - Fülle aus:
-     - First name
-     - Last name
-     - Email
-     - Password (mind. 8 Zeichen)
-   - Klicke **"Let's start"**
-
-3. **API testen**:
-   - REST API: `https://strapi-admin-production-a1b2.up.railway.app/api/achievements`
-   - Admin Panel: `https://strapi-admin-production-a1b2.up.railway.app/admin`
-
----
-
-### Schritt 9: Automatische Deployments (Continuous Deployment)
-
-**Ab jetzt**: Jeder `git push` zu deinem GitHub-Repository triggert automatisch ein neues Deployment auf Railway!
-
-**Workflow**:
-1. Lokal Änderungen machen
-2. `git add .`
-3. `git commit -m "Update"`
-4. `git push origin main`
-5. Railway baut und deployt automatisch
-6. Du siehst neues Deployment im **Deployments**-Tab
-
----
-
-### Schritt 10: Logs und Monitoring
-
-**Logs ansehen**:
-1. Klicke auf dein Strapi-Service
-2. Gehe zum Tab **"Deployments"**
-3. Klicke auf ein Deployment → Siehst Build + Runtime Logs
-
-**Oder Live-Logs**:
-1. Klicke auf dein Service
-2. Oben rechts: **"View Logs"**
-3. Siehst Live-Stream der Logs
-
-**Metriken**:
-1. Gehe zum Tab **"Metrics"**
-2. Siehst CPU, Memory, Network Usage
-
----
-
-### Railway Kosten & Limits (Stand 2026)
-
-**Free Tier**:
-- $5 Startguthaben pro Monat
-- Unbegrenzte Projekte
-- 500 Stunden Laufzeit/Monat
-- 100 GB Bandbreite
-- 1 GB RAM pro Service
-
-**Für Strapi typisch**:
-- ~$3-5/Monat bei geringem Traffic
-- PostgreSQL-Datenbank: ~$1-2/Monat
-
-**Upgrade auf Pro** (falls nötig):
-- $20/Monat
-- Mehr RAM, CPU, Bandbreite
-
-## 6. Wichtige Hinweise
-
-### Vercel Free Tier Limits:
-- 10-Sekunden-Timeout für Serverless-Funktionen
-- 100 GB Bandbreite/Monat
-- Keine persistente Dateispeicherung (nutze Cloud-Storage für Uploads)
-
-### Für Datei-Uploads:
-Konfiguriere ein Upload-Provider-Plugin (z.B. AWS S3, Cloudinary) in `config/plugins.ts`:
-```typescript
-export default {
-  upload: {
-    config: {
-      provider: 'cloudinary',
-      providerOptions: {
-        cloud_name: env('CLOUDINARY_NAME'),
-        api_key: env('CLOUDINARY_KEY'),
-        api_secret: env('CLOUDINARY_SECRET'),
-      },
-    },
-  },
-};
+### 4.2 .env Datei auf VPS erstellen
+```bash
+nano /opt/strapi/.env
 ```
 
-### Continuous Deployment:
-- Jeder Push zu `main` triggert automatisch ein neues Deployment
-- Preview-Deployments für Pull Requests
+**Inhalt (ALLE WERTE ANPASSEN!):**
+```env
+# Server
+NODE_ENV=production
+HOST=0.0.0.0
+PORT=1337
+PUBLIC_URL=https://api.florianbirkenberger.de
 
-## 7. Troubleshooting
+# Database
+DATABASE_CLIENT=postgres
+DATABASE_HOST=postgres
+DATABASE_PORT=5432
+DATABASE_NAME=strapi
+DATABASE_USERNAME=strapi
+DATABASE_PASSWORD=DEIN_SICHERES_DB_PASSWORT
 
-**Build-Fehler "Unsupported Node.js version"**:
-- Erstelle `.nvmrc` im Root mit: `20.11.0`
+# Secrets (deine generierten Werte einfügen!)
+APP_KEYS=schlüssel1,schlüssel2,schlüssel3,schlüssel4
+API_TOKEN_SALT=dein_generierter_schlüssel
+ADMIN_JWT_SECRET=dein_generierter_schlüssel
+TRANSFER_TOKEN_SALT=dein_generierter_schlüssel
+ENCRYPTION_KEY=dein_generierter_schlüssel
+JWT_SECRET=dein_generierter_schlüssel
+```
 
-**Timeout-Fehler**:
-- Vercel Free Tier hat 10s Timeout
-- Erwäge Heroku/Railway für längere Requests
+**Speichern:** `Ctrl+X`, dann `Y`, dann `Enter`
 
-**Datenbank-Connection-Fehler**:
-- Prüfe DATABASE_URL in Vercel Dashboard
-- SSL-Einstellungen: `DATABASE_SSL=true`, `DATABASE_SSL_REJECT_UNAUTHORIZED=false`
+---
 
-**Admin-Panel lädt nicht**:
-- Prüfe ob alle Secrets gesetzt sind
-- Build-Logs in Vercel überprüfen
+## 5. SSL-Zertifikat einrichten
+
+### 5.1 Initiale Nginx-Konfiguration (nur HTTP)
+```bash
+# Ersetze SSL-Konfiguration mit HTTP-only für Certbot
+cp nginx/conf.d/strapi-initial.conf.template nginx/conf.d/strapi.conf
+```
+
+### 5.2 Container starten (ohne SSL)
+```bash
+docker compose up -d postgres strapi nginx
+```
+
+### 5.3 Warte bis Container laufen
+```bash
+docker compose ps
+docker compose logs -f strapi
+# Warte auf: "Server started on http://0.0.0.0:1337"
+# Beenden mit Ctrl+C
+```
+
+### 5.4 SSL-Zertifikat holen
+```bash
+docker compose run --rm certbot certonly \
+    --webroot \
+    --webroot-path=/var/www/certbot \
+    --email deine-email@example.com \
+    --agree-tos \
+    --no-eff-email \
+    -d api.florianbirkenberger.de
+```
+
+### 5.5 SSL-Konfiguration aktivieren
+```bash
+# Kopiere vollständige SSL-Konfiguration
+cat > nginx/conf.d/strapi.conf << 'EOF'
+upstream strapi {
+    server strapi:1337;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.florianbirkenberger.de;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.florianbirkenberger.de;
+
+    ssl_certificate /etc/letsencrypt/live/api.florianbirkenberger.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.florianbirkenberger.de/privkey.pem;
+
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    add_header Strict-Transport-Security "max-age=63072000" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    client_max_body_size 256M;
+
+    location / {
+        proxy_pass http://strapi;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+```
+
+### 5.6 Nginx neu starten
+```bash
+docker compose restart nginx
+```
+
+---
+
+## 6. Deployment testen
+
+### 6.1 Container-Status prüfen
+```bash
+docker compose ps
+```
+
+Alle Container sollten "Up" und "healthy" sein.
+
+### 6.2 Logs prüfen
+```bash
+docker compose logs -f strapi
+```
+
+### 6.3 Admin-Panel öffnen
+Öffne im Browser:
+```
+https://api.florianbirkenberger.de/admin
+```
+
+**Ersten Admin-User erstellen:**
+- First name, Last name
+- Email
+- Password (mind. 8 Zeichen)
+- Klicke "Let's start"
+
+### 6.4 API testen
+```bash
+curl https://api.florianbirkenberger.de/api/achievements
+```
+
+---
+
+## 7. Updates deployen
+
+### 7.1 Lokal: Änderungen pushen
+```bash
+git add .
+git commit -m "Update"
+git push origin main
+```
+
+### 7.2 Auf VPS: Update ziehen und neu bauen
+```bash
+cd /opt/strapi
+git pull origin main
+docker compose down
+docker compose build --no-cache strapi
+docker compose up -d
+```
+
+### 7.3 Logs überwachen
+```bash
+docker compose logs -f strapi
+```
+
+---
+
+## 8. Nützliche Befehle
+
+### Container-Management
+```bash
+# Status anzeigen
+docker compose ps
+
+# Alle Logs
+docker compose logs -f
+
+# Nur Strapi Logs
+docker compose logs -f strapi
+
+# Container neustarten
+docker compose restart strapi
+
+# Alles stoppen
+docker compose down
+
+# Alles starten
+docker compose up -d
+```
+
+### Datenbank-Backup
+```bash
+# Backup erstellen
+docker compose exec postgres pg_dump -U strapi strapi > backup_$(date +%Y%m%d).sql
+
+# Backup wiederherstellen
+cat backup_20260103.sql | docker compose exec -T postgres psql -U strapi strapi
+```
+
+### Uploads-Backup
+```bash
+# Backup
+docker cp strapi-app:/app/public/uploads ./uploads_backup
+
+# Wiederherstellen
+docker cp ./uploads_backup/. strapi-app:/app/public/uploads/
+```
+
+### Shell im Container
+```bash
+docker compose exec strapi sh
+docker compose exec postgres psql -U strapi strapi
+```
+
+---
+
+## 9. Troubleshooting
+
+### Container startet nicht
+```bash
+docker compose logs strapi
+# Prüfe auf Fehler in .env Datei
+```
+
+### Datenbank-Verbindungsfehler
+```bash
+# Prüfe ob postgres läuft
+docker compose ps postgres
+
+# Prüfe Credentials
+docker compose exec postgres psql -U strapi -d strapi
+```
+
+### SSL-Zertifikat erneuern
+```bash
+docker compose run --rm certbot renew
+docker compose restart nginx
+```
+
+### Speicherplatz prüfen
+```bash
+df -h
+docker system prune -a  # Alte Images löschen
+```
+
+---
+
+## 10. Architektur-Übersicht
+
+```
+                    Internet
+                        │
+                        ▼
+                   ┌─────────┐
+                   │  Nginx  │ :80/:443
+                   │ (Proxy) │
+                   └────┬────┘
+                        │
+         ┌──────────────┼──────────────┐
+         │              │              │
+         ▼              ▼              ▼
+    ┌─────────┐   ┌──────────┐   ┌──────────┐
+    │ Strapi  │   │ Certbot  │   │ Uploads  │
+    │  :1337  │   │  (SSL)   │   │ (Volume) │
+    └────┬────┘   └──────────┘   └──────────┘
+         │
+         ▼
+    ┌──────────┐
+    │ Postgres │
+    │  :5432   │
+    └──────────┘
+```
+
+**URLs:**
+- Admin Panel: `https://api.florianbirkenberger.de/admin`
+- REST API: `https://api.florianbirkenberger.de/api/`
+- Uploads: `https://api.florianbirkenberger.de/uploads/`
