@@ -1,0 +1,14 @@
+# Railway Ignore File
+node_modules/
+.tmp/
+.cache/
+.env
+.env.local
+.env.development
+*.db
+*.db-shm
+*.db-wal
+.git/
+.vscode/
+.idea/
+dist/
