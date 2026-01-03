@@ -14,8 +14,11 @@
     "attributes": {
         "clubName": {
             "type": "string",
-            "required": true,
-            "default": "Volleyballverein"
+            "default": "Volleyballverein",
+            "required": true
+        },
+        "founding": {
+            "type": "integer"
         },
         "logo": {
             "type": "media",
@@ -39,8 +42,8 @@
         },
         "socialLinks": {
             "type": "component",
-            "repeatable": true,
-            "component": "shared.social-link"
+            "component": "shared.social-link",
+            "repeatable": true
         }
     }
 }
