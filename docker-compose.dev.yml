@@ -1,10 +1,9 @@
-version: '3.8'
-
-# Docker Compose für lokale Entwicklung mit PostgreSQL
-# Nutzung: docker-compose -f docker-compose.dev.yml up -d
+# Docker Compose für lokale Entwicklung
+# Nutzung: docker compose -f docker-compose.dev.yml up -d
+#          npm run dev (Strapi mit Hot-Reload auf Host)
 
 services:
-  # PostgreSQL Datenbank
+  # PostgreSQL Datenbank (Entwicklung)
   postgres:
     image: postgres:16-alpine
     container_name: strapi-db-dev
@@ -24,6 +23,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Optional: pgAdmin für Datenbank-Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: strapi-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@localhost.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    networks:
+      - strapi-dev-network
+    depends_on:
+      - postgres
+    profiles:
+      - tools
 
 volumes:
   postgres_dev_data:
