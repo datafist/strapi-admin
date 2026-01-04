@@ -201,6 +201,39 @@ export default {
           }
         });
 
+        // 9. Achievements erstellen
+        await strapi.documents('api::achievement.achievement').create({
+          data: {
+            name: 'Deutscher Meister',
+            season: '2023/2024',
+            publishedAt: new Date()
+          }
+        });
+
+        await strapi.documents('api::achievement.achievement').create({
+          data: {
+            name: 'DVV-Pokalsieger',
+            season: '2022/2023',
+            publishedAt: new Date()
+          }
+        });
+
+        await strapi.documents('api::achievement.achievement').create({
+          data: {
+            name: 'Landesmeister Bayern',
+            season: '2021/2022',
+            publishedAt: new Date()
+          }
+        });
+
+        await strapi.documents('api::achievement.achievement').create({
+          data: {
+            name: 'Aufstieg 1. Bundesliga',
+            season: '2020/2021',
+            publishedAt: new Date()
+          }
+        });
+
         console.log('✅ Test data seeded successfully!');
       }
     }
