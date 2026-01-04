@@ -82,20 +82,52 @@ dig api.florianbirkenberger.de +short
 
 ## 3. Projekt auf VPS klonen
 
-### 3.1 Projekt-Verzeichnis erstellen
+### 3.1 Projekt-Verzeichnis erstellen und Repository klonen
 ```bash
-mkdir -p /opt/strapi
-cd /opt/strapi
+cd /opt
+git clone https://github.com/DEIN_USERNAME/strapi-admin.git
+cd strapi-admin
 ```
 
-### 3.2 Repository klonen
-```bash
-git clone https://github.com/DEIN_USERNAME/strapi-admin.git .
+**Danach befindest du dich in:** `/opt/strapi-admin/`
+
+**Verzeichnisstruktur nach dem Klonen:**
+```
+/opt/strapi-admin/
+├── config/
+├── database/
+├── nginx/
+│   ├── nginx.conf
+│   └── conf.d/
+│       ├── strapi.conf
+│       └── strapi-initial.conf.template
+├── public/
+├── scripts/
+│   ├── deploy.sh
+│   └── init-ssl.sh
+├── src/
+├── .env.production          ← Template für .env
+├── docker-compose.yml       ← Haupt-Compose-Datei
+├── docker-compose.dev.yml
+├── Dockerfile
+├── package.json
+└── ...
 ```
 
-### 3.3 Certbot-Verzeichnisse erstellen
+### 3.2 Certbot-Verzeichnisse erstellen
 ```bash
+# Im Projektordner /opt/strapi-admin/
 mkdir -p certbot/conf certbot/www
+```
+
+**Verzeichnisstruktur nach Certbot-Setup:**
+```
+/opt/strapi-admin/
+├── certbot/                 ← NEU ERSTELLT
+│   ├── conf/                ← SSL-Zertifikate werden hier gespeichert
+│   └── www/                 ← Certbot Challenge-Dateien
+├── nginx/
+├── ...
 ```
 
 ---
@@ -108,10 +140,13 @@ mkdir -p certbot/conf certbot/www
 node -e "console.log(require('crypto').randomBytes(16).toString('base64'))"
 ```
 
-### 4.2 .env Datei auf VPS erstellen
+### 4.2 .env Datei im Projektordner erstellen
 ```bash
-nano /opt/strapi/.env
+# Im Projektordner /opt/strapi-admin/
+nano .env
 ```
+
+**Wichtig:** Die `.env` Datei muss im gleichen Ordner wie `docker-compose.yml` liegen!
 
 **Inhalt (ALLE WERTE ANPASSEN!):**
 ```env
@@ -144,9 +179,11 @@ JWT_SECRET=dein_generierter_schlüssel
 
 ## 5. SSL-Zertifikat einrichten
 
+**Alle Befehle im Projektordner `/opt/strapi-admin/` ausführen!**
+
 ### 5.1 Initiale Nginx-Konfiguration (nur HTTP)
 ```bash
-# Ersetze SSL-Konfiguration mit HTTP-only für Certbot
+# Im Projektordner /opt/strapi-admin/
 cp nginx/conf.d/strapi-initial.conf.template nginx/conf.d/strapi.conf
 ```
 
@@ -281,7 +318,7 @@ git push origin main
 
 ### 7.2 Auf VPS: Update ziehen und neu bauen
 ```bash
-cd /opt/strapi
+cd /opt/strapi-admin
 git pull origin main
 docker compose down
 docker compose build --no-cache strapi

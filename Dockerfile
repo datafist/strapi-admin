@@ -40,7 +40,6 @@ RUN adduser --system --uid 1001 strapi
 # Kopiere notwendige Dateien
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/src ./src

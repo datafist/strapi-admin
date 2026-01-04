@@ -2,16 +2,27 @@
 # ===========================================
 # Strapi Deployment Script für Hostinger VPS
 # ===========================================
-# Nutzung: ./scripts/deploy.sh
+# Nutzung: cd /opt/strapi-admin && ./scripts/deploy.sh
 
 set -e
 
 echo "=== Strapi Deployment ==="
+echo "Aktuelles Verzeichnis: $(pwd)"
+
+# Prüfe ob wir im richtigen Verzeichnis sind
+if [ ! -f "docker-compose.yml" ]; then
+    echo "FEHLER: docker-compose.yml nicht gefunden!"
+    echo "Bitte führe dieses Skript im Projektordner aus:"
+    echo "  cd /opt/strapi-admin && ./scripts/deploy.sh"
+    exit 1
+fi
 
 # Prüfe ob .env existiert
 if [ ! -f .env ]; then
     echo "FEHLER: .env Datei nicht gefunden!"
-    echo "Kopiere .env.production zu .env und passe die Werte an."
+    echo "Kopiere .env.production zu .env und passe die Werte an:"
+    echo "  cp .env.production .env"
+    echo "  nano .env"
     exit 1
 fi
 

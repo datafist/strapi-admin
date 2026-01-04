@@ -2,7 +2,7 @@
 # ===========================================
 # SSL-Zertifikat mit Let's Encrypt einrichten
 # ===========================================
-# Dieses Skript auf dem VPS ausführen!
+# Dieses Skript im Projektordner /opt/strapi-admin/ ausführen!
 
 set -e
 
@@ -10,6 +10,15 @@ DOMAIN="api.florianbirkenberger.de"
 EMAIL="your-email@example.com"  # ÄNDERN!
 
 echo "=== SSL-Zertifikat Setup für $DOMAIN ==="
+echo "Aktuelles Verzeichnis: $(pwd)"
+
+# Prüfe ob wir im richtigen Verzeichnis sind
+if [ ! -f "docker-compose.yml" ]; then
+    echo "FEHLER: docker-compose.yml nicht gefunden!"
+    echo "Bitte führe dieses Skript im Projektordner aus:"
+    echo "  cd /opt/strapi-admin && ./scripts/init-ssl.sh"
+    exit 1
+fi
 
 # Erstelle notwendige Verzeichnisse
 mkdir -p certbot/conf certbot/www
