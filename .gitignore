@@ -1,1 +1,46 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment files (NEVER commit secrets!)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Keep .env.example as template
+!.env.example
+
+# Build output
+build/
+dist/
+.strapi/
+
+# Database (local development)
+.tmp/
+*.db
+*.db-journal
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes (local)
+postgres_data/
+
+# Uploads (managed separately)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# SSL certificates (local copies)
+certbot/

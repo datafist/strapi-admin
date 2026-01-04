@@ -4,19 +4,47 @@
 
 Diese Anleitung beschreibt das Deployment von Strapi 5 auf einem Hostinger VPS mit:
 - **Docker** für Container-Orchestrierung
-- **PostgreSQL** als Datenbank
+- **PostgreSQL** als Datenbank (gleiche DB wie lokal)
 - **Nginx** als Reverse Proxy
 - **Let's Encrypt** für SSL-Zertifikate
 - **Domain**: `api.florianbirkenberger.de`
+
+## Architektur
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     ENTWICKLUNG (Lokal)                      │
+├─────────────────────────────────────────────────────────────┤
+│  npm run dev          ←→    PostgreSQL (Docker)              │
+│  localhost:1337              localhost:5432                  │
+│                                                              │
+│  Dateien: .env, docker-compose.dev.yml                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                         git push
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     PRODUKTION (VPS)                         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────┐    ┌─────────┐    ┌──────────┐                 │
+│  │  Nginx  │ ←→ │ Strapi  │ ←→ │ Postgres │                 │
+│  │  :443   │    │  :1337  │    │  :5432   │                 │
+│  └─────────┘    └─────────┘    └──────────┘                 │
+│       │                                                      │
+│  SSL-Zertifikat (Let's Encrypt)                             │
+│                                                              │
+│  Dateien: .env (manuell erstellt), docker-compose.yml        │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Voraussetzungen
 
 - Hostinger VPS mit Ubuntu 22.04+ oder Debian 11+
-- Domain `florianbirkenberger.de` mit DNS-Zugriff
+- Domain mit DNS-Zugriff
 - SSH-Zugang zum VPS
-- Lokal: Git, Node.js (für Secrets-Generierung)
 
 ---
 
@@ -90,7 +118,7 @@ dig api.florianbirkenberger.de +short
 ### 3.1 Projekt-Verzeichnis erstellen und Repository klonen
 ```bash
 cd /opt
-git clone https://github.com/DEIN_USERNAME/strapi-admin.git
+git clone https://github.com/datafist/strapi-admin.git
 cd strapi-admin
 ```
 
@@ -100,58 +128,38 @@ cd strapi-admin
 ```
 /opt/strapi-admin/
 ├── config/
-├── database/
 ├── nginx/
 │   ├── nginx.conf
 │   └── conf.d/
 │       ├── strapi.conf
 │       └── strapi-initial.conf.template
-├── public/
-├── scripts/
-│   ├── deploy.sh
-│   └── init-ssl.sh
 ├── src/
-├── .env.production          ← Template für .env
-├── docker-compose.yml       ← Haupt-Compose-Datei
-├── docker-compose.dev.yml
+├── .env.example             ← Template für .env
+├── docker-compose.yml       ← Produktion (Strapi + Postgres + Nginx)
+├── docker-compose.dev.yml   ← Entwicklung (nur Postgres)
 ├── Dockerfile
-├── package.json
-└── ...
+└── package.json
 ```
 
 ### 3.2 Certbot-Verzeichnisse erstellen
 ```bash
-# Im Projektordner /opt/strapi-admin/
 mkdir -p certbot/conf certbot/www
-```
-
-**Verzeichnisstruktur nach Certbot-Setup:**
-```
-/opt/strapi-admin/
-├── certbot/                 ← NEU ERSTELLT
-│   ├── conf/                ← SSL-Zertifikate werden hier gespeichert
-│   └── www/                 ← Certbot Challenge-Dateien
-├── nginx/
-├── ...
 ```
 
 ---
 
 ## 4. Umgebungsvariablen konfigurieren
 
-### 4.1 Secrets lokal generieren (auf deinem PC)
+### 4.1 Secrets generieren
 ```bash
-# Führe 6 Mal aus und notiere jeden Wert:
-node -e "console.log(require('crypto').randomBytes(16).toString('base64'))"
+# Auf dem VPS oder lokal - 6 Mal ausführen:
+openssl rand -base64 32
 ```
 
-### 4.2 .env Datei im Projektordner erstellen
+### 4.2 .env Datei erstellen
 ```bash
-# Im Projektordner /opt/strapi-admin/
 nano .env
 ```
-
-**Wichtig:** Die `.env` Datei muss im gleichen Ordner wie `docker-compose.yml` liegen!
 
 **Inhalt (ALLE WERTE ANPASSEN!):**
 ```env
@@ -161,13 +169,14 @@ HOST=0.0.0.0
 PORT=1337
 PUBLIC_URL=https://api.florianbirkenberger.de
 
-# Database
+# Database (Achtung: HOST ist "postgres", nicht "localhost"!)
 DATABASE_CLIENT=postgres
 DATABASE_HOST=postgres
 DATABASE_PORT=5432
 DATABASE_NAME=strapi
 DATABASE_USERNAME=strapi
 DATABASE_PASSWORD=DEIN_SICHERES_DB_PASSWORT
+DATABASE_SSL=false
 
 # Secrets (deine generierten Werte einfügen!)
 APP_KEYS=schlüssel1,schlüssel2,schlüssel3,schlüssel4
@@ -176,9 +185,27 @@ ADMIN_JWT_SECRET=dein_generierter_schlüssel
 TRANSFER_TOKEN_SALT=dein_generierter_schlüssel
 ENCRYPTION_KEY=dein_generierter_schlüssel
 JWT_SECRET=dein_generierter_schlüssel
+
+# Seeding (nur einmalig bei leerer DB auf true setzen)
+SEED_DATA=false
 ```
 
 **Speichern:** `Ctrl+X`, dann `Y`, dann `Enter`
+
+> ⚠️ **Wichtig:** Die `.env` Datei wird NICHT ins Git committed! Sie existiert nur auf dem Server.
+APP_KEYS=schlüssel1,schlüssel2,schlüssel3,schlüssel4
+API_TOKEN_SALT=dein_generierter_schlüssel
+ADMIN_JWT_SECRET=dein_generierter_schlüssel
+TRANSFER_TOKEN_SALT=dein_generierter_schlüssel
+JWT_SECRET=dein_generierter_schlüssel
+
+# Seeding (nur einmalig bei leerer DB auf true setzen)
+SEED_DATA=false
+```
+
+**Speichern:** `Ctrl+X`, dann `Y`, dann `Enter`
+
+> ⚠️ **Wichtig:** Die `.env` Datei wird NICHT ins Git committed! Sie existiert nur auf dem Server.
 
 ---
 

@@ -1,96 +1,103 @@
-# Strapi 5 CMS Entwicklungsumgebung
+# Strapi 5 CMS - Volleystars
 
-Eine vollständige Strapi 5 Headless CMS Entwicklungsumgebung mit TypeScript-Unterstützung.
+Headless CMS für die Volleystars Vereinswebsite mit TypeScript und PostgreSQL.
 
 ## 📋 Voraussetzungen
 
-- Node.js >= 20.x
+- Node.js >= 20.x (max 24.x)
 - npm >= 6.x
+- Docker & Docker Compose
 
-## 🚀 Schnellstart
+## 🚀 Schnellstart (Lokale Entwicklung)
 
-### Entwicklungsserver starten
-
-Starten Sie Ihre Strapi-Anwendung mit aktiviertem autoReload:
-
+### 1. Repository klonen
 ```bash
-npm run develop
+git clone https://github.com/datafist/strapi-admin.git
+cd strapi-admin
+npm install
+```
+
+### 2. Umgebungsvariablen einrichten
+```bash
+cp .env.example .env
+# Werte sind für Entwicklung bereits vorkonfiguriert
+```
+
+### 3. PostgreSQL starten (Docker)
+```bash
+npm run docker:dev
+```
+
+### 4. Strapi starten
+```bash
+npm run dev
 ```
 
 Das Admin Panel ist verfügbar unter: http://localhost:1337/admin
 
-### Produktionsserver starten
-
-Starten Sie Ihre Strapi-Anwendung ohne autoReload:
-
+### 5. Testdaten laden (optional)
 ```bash
-npm run start
-```
-
-### Admin Panel erstellen
-
-Erstellen Sie Ihr Admin Panel für die Produktion:
-
-```bash
-npm run build
+npm run db:seed
 ```
 
 ## 📁 Projektstruktur
 
 ```
 strapi-admin/
-├── config/          # Konfigurationsdateien
-├── database/        # Datenbank-Dateien (SQLite)
-├── public/          # Öffentliche Assets
+├── config/              # Strapi-Konfiguration
 ├── src/
-│   ├── api/         # API-Definitionen
-│   ├── components/  # Wiederverwendbare Komponenten
-│   └── index.ts     # Einstiegspunkt
-├── .env             # Umgebungsvariablen
-└── package.json     # Projektabhängigkeiten
+│   ├── api/             # Content-Types (Team, Player, Match, etc.)
+│   ├── components/      # Wiederverwendbare Komponenten (SEO, etc.)
+│   └── index.ts         # Bootstrap & Seeding
+├── nginx/               # Nginx-Konfiguration (Produktion)
+├── docker-compose.yml       # Produktion (Strapi + Postgres + Nginx)
+├── docker-compose.dev.yml   # Entwicklung (nur Postgres)
+├── .env.example         # Template für Umgebungsvariablen
+└── DEPLOYMENT.md        # Deployment-Anleitung
 ```
 
 ## 🔧 Verfügbare Befehle
 
-- `npm run develop` - Entwicklungsmodus mit autoReload
-- `npm run start` - Produktionsmodus
-- `npm run build` - Admin Panel bauen
-- `npm run strapi` - Strapi CLI anzeigen
-- `npm run console` - Strapi Console öffnen
+### Entwicklung
+| Befehl | Beschreibung |
+|--------|--------------|
+| `npm run dev` | Strapi mit Hot-Reload starten |
+| `npm run docker:dev` | PostgreSQL Container starten |
+| `npm run docker:dev:stop` | PostgreSQL stoppen |
+| `npm run docker:dev:reset` | Datenbank komplett zurücksetzen |
+| `npm run docker:pgadmin` | pgAdmin starten (http://localhost:5050) |
+| `npm run db:seed` | Testdaten laden |
 
-## 📚 Wichtige Funktionen
+### Produktion
+| Befehl | Beschreibung |
+|--------|--------------|
+| `npm run build` | Admin Panel bauen |
+| `npm run start` | Produktionsserver starten |
+| `npm run docker:prod` | Alle Container starten |
+| `npm run docker:prod:build` | Strapi-Image neu bauen |
 
-- **Content-Type Builder**: Erstellen Sie Content-Typen über das Admin Panel
-- **REST API**: Automatisch generierte REST API für alle Content-Typen
-- **GraphQL**: GraphQL API verfügbar über Plugin
-- **Medien-Bibliothek**: Upload und Verwaltung von Assets
-- **Rollen & Berechtigungen**: Feingranulare Zugriffskontrolle
-- **TypeScript**: Vollständige TypeScript-Unterstützung
+## 🗄️ Content-Types
 
-## ⚙️ Deployment
+| Name | Beschreibung |
+|------|--------------|
+| Team | Mannschaften (Damen 1, etc.) |
+| Player | Spielerinnen mit Position, Nummer |
+| Coach | Trainer |
+| Match | Spielplan & Ergebnisse |
+| News Article | Vereinsnews mit SEO |
+| Page | Statische Seiten |
+| Homepage | Startseite-Konfiguration |
+| Club Info | Vereinsdaten (Single Type) |
+| Achievement | Erfolge & Titel |
 
-Strapi gives you many possible deployment options for your project including [Strapi Cloud](https://cloud.strapi.io). Browse the [deployment section of the documentation](https://docs.strapi.io/dev-docs/deployment) to find the best solution for your use case.
+## 🌐 Deployment
 
-```
-yarn strapi deploy
-```
+Siehe [DEPLOYMENT.md](DEPLOYMENT.md) für die vollständige Anleitung zum Deployment auf einem VPS mit Docker.
 
-## 📚 Learn more
+**Produktion:** https://api.florianbirkenberger.de
 
-- [Resource center](https://strapi.io/resource-center) - Strapi resource center.
-- [Strapi documentation](https://docs.strapi.io) - Official Strapi documentation.
-- [Strapi tutorials](https://strapi.io/tutorials) - List of tutorials made by the core team and the community.
-- [Strapi blog](https://strapi.io/blog) - Official Strapi blog containing articles made by the Strapi team and the community.
-- [Changelog](https://strapi.io/changelog) - Find out about the Strapi product updates, new features and general improvements.
+## 📚 Dokumentation
 
-Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/strapi). Your feedback and contributions are welcome!
-
-## ✨ Community
-
-- [Discord](https://discord.strapi.io) - Come chat with the Strapi community including the core team.
-- [Forum](https://forum.strapi.io/) - Place to discuss, ask questions and find answers, show your Strapi project and get feedback or just talk with other Community members.
-- [Awesome Strapi](https://github.com/strapi/awesome-strapi) - A curated list of awesome things related to Strapi.
-
----
-
-<sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+- [Strapi Dokumentation](https://docs.strapi.io)
+- [Strapi REST API](https://docs.strapi.io/dev-docs/api/rest)
+- [Strapi Admin Panel](https://docs.strapi.io/user-docs/intro)
