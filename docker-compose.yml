@@ -44,6 +44,9 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-strapi_password}
       DATABASE_SSL: "false"
       
+      # Seeding (optional, für Testdaten)
+      SEED_DATA: ${SEED_DATA:-false}
+      
       # Secrets (MÜSSEN in .env gesetzt werden!)
       APP_KEYS: ${APP_KEYS}
       API_TOKEN_SALT: ${API_TOKEN_SALT}
