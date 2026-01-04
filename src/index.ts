@@ -17,8 +17,10 @@ export default {
    * run jobs, or perform some special logic.
    */
   async bootstrap({ strapi }) {
-    // Seed-Daten nur beim ersten Start UND nur in Development
-    if (process.env.NODE_ENV === 'development') {
+    // Seed-Daten wenn SEED_DATA=true ODER in Development ohne Daten
+    const shouldSeed = process.env.SEED_DATA === 'true' || process.env.NODE_ENV === 'development';
+    
+    if (shouldSeed) {
       const hasData = await strapi.db.query('api::team.team').findMany();
       
       if (hasData.length === 0) {
