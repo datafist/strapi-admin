@@ -60,6 +60,11 @@ ufw allow 443/tcp
 ufw enable
 ```
 
+### 1.5 Certbot installieren (für SSL-Zertifikate)
+```bash
+apt install -y certbot
+```
+
 ---
 
 ## 2. DNS konfigurieren
@@ -202,13 +207,21 @@ docker compose logs -f strapi
 
 ### 5.4 SSL-Zertifikat holen
 ```bash
-docker compose run --rm certbot certonly \
-    --webroot \
-    --webroot-path=/var/www/certbot \
+# Stoppe nginx temporär
+docker compose stop nginx
+
+# Hole Zertifikat mit Certbot (standalone)
+certbot certonly --standalone \
     --email deine-email@example.com \
     --agree-tos \
     --no-eff-email \
     -d api.florianbirkenberger.de
+
+# Kopiere Zertifikate in Projektordner
+cp -rL /etc/letsencrypt/* certbot/conf/
+
+# Prüfe ob Zertifikat erstellt wurde
+ls -la certbot/conf/live/api.florianbirkenberger.de/
 ```
 
 ### 5.5 SSL-Konfiguration aktivieren
@@ -234,8 +247,9 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
     server_name api.florianbirkenberger.de;
 
     ssl_certificate /etc/letsencrypt/live/api.florianbirkenberger.de/fullchain.pem;
@@ -400,7 +414,44 @@ docker compose exec postgres psql -U strapi -d strapi
 
 ### SSL-Zertifikat erneuern
 ```bash
-docker compose run --rm certbot renew
+# Stoppe nginx temporär
+docker compose stop nginx
+
+# Erneuere Zertifikat
+certbot renew
+
+# Kopiere neue Zertifikate
+cp -rL /etc/letsencrypt/* certbot/conf/
+
+# Starte nginx
+docker compose up -d nginx
+```
+
+### Nginx startet nicht (SSL-Fehler)
+```bash
+# Prüfe nginx Logs
+docker compose logs nginx --tail=20
+
+# Falls SSL-Zertifikat fehlt, nutze HTTP-only Config temporär
+cat > nginx/conf.d/strapi.conf << 'EOF'
+upstream strapi {
+    server strapi:1337;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.florianbirkenberger.de;
+
+    location / {
+        proxy_pass http://strapi;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
 docker compose restart nginx
 ```
 
