@@ -13,16 +13,22 @@
     "strapi": "strapi",
     "upgrade": "npx @strapi/upgrade latest",
     "upgrade:dry": "npx @strapi/upgrade latest --dry",
-    "docker:dev": "docker compose -f docker-compose.dev.yml up -d postgres",
-    "docker:dev:stop": "docker compose -f docker-compose.dev.yml down",
+
+    "docker:db": "docker compose -f docker-compose.dev.yml up -d postgres",
+    "docker:dev": "docker compose -f docker-compose.dev.yml --profile full up -d",
+    "docker:dev:build": "docker compose -f docker-compose.dev.yml --profile full build strapi",
     "docker:dev:logs": "docker compose -f docker-compose.dev.yml logs -f",
-    "docker:dev:reset": "docker compose -f docker-compose.dev.yml down -v && docker compose -f docker-compose.dev.yml up -d postgres",
-    "docker:pgadmin": "docker compose -f docker-compose.dev.yml --profile tools up -d pgadmin",
+    "docker:dev:stop": "docker compose -f docker-compose.dev.yml --profile full down",
+    "docker:dev:reset": "docker compose -f docker-compose.dev.yml --profile full down -v && docker compose -f docker-compose.dev.yml --profile full up -d",
+    "docker:pgadmin": "docker compose -f docker-compose.dev.yml --profile tools up -d",
+
     "docker:prod": "docker compose up -d",
-    "docker:prod:stop": "docker compose down",
-    "docker:prod:logs": "docker compose logs -f",
     "docker:prod:build": "docker compose build strapi",
-    "db:seed": "SEED_DATA=true npm run dev"
+    "docker:prod:logs": "docker compose logs -f",
+    "docker:prod:stop": "docker compose down",
+
+    "db:seed": "SEED_DATA=true npm run dev",
+    "db:seed:docker": "SEED_DATA=true docker compose -f docker-compose.dev.yml --profile full up -d"
   },
   "dependencies": {
     "@strapi/plugin-cloud": "5.33.1",

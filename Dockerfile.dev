@@ -1,0 +1,31 @@
+# ===========================================
+# Dockerfile für lokale Entwicklung
+# ===========================================
+# Hot-Reload aktiviert - Änderungen werden sofort übernommen
+
+FROM node:20-alpine
+
+# Arbeitsverzeichnis
+WORKDIR /app
+
+# System-Dependencies für native Module
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git
+
+# Package files kopieren
+COPY package*.json ./
+
+# Dependencies installieren
+RUN npm install
+
+# Source wird per Volume gemountet (nicht kopiert)
+# Das ermöglicht Hot-Reload
+
+# Port
+EXPOSE 1337
+
+# Strapi im Development-Modus starten
+CMD ["npm", "run", "develop"]
