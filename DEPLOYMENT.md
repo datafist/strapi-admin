@@ -366,7 +366,16 @@ docker compose build --no-cache strapi
 docker compose up -d
 ```
 
-### 7.3 Logs überwachen
+### 7.3 Mit Testdaten starten (optional)
+```bash
+# Wenn du Testdaten laden möchtest:
+SEED_DATA=true docker compose up -d
+
+# Oder später nach dem ersten Start:
+docker compose exec strapi sh -c "SEED_DATA=true npm run dev"
+```
+
+### 7.4 Logs überwachen
 ```bash
 docker compose logs -f strapi
 ```
