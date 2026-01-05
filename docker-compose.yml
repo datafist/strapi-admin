@@ -58,10 +58,10 @@ services:
       - strapi_uploads:/app/public/uploads
     networks:
       - strapi-network
-      - traefik-public
+      - web
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
+      - "traefik.docker.network=web"
       # HTTP Router
       - "traefik.http.routers.strapi.rule=Host(`${DOMAIN:-api.florianbirkenberger.de}`)"
       - "traefik.http.routers.strapi.entrypoints=websecure"
@@ -79,5 +79,5 @@ volumes:
 networks:
   strapi-network:
     driver: bridge
-  traefik-public:
+  web:
     external: true
