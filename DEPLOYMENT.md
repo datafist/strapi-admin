@@ -5,8 +5,8 @@
 Diese Anleitung beschreibt das Deployment von Strapi 5 auf einem Hostinger VPS mit:
 - **Docker** für Container-Orchestrierung
 - **PostgreSQL** als Datenbank (gleiche DB wie lokal)
-- **Nginx** als Reverse Proxy
-- **Let's Encrypt** für SSL-Zertifikate
+- **Traefik** als Reverse Proxy (externer Stack)
+- **Let's Encrypt** für SSL-Zertifikate (via Traefik)
 - **Domain**: `api.florianbirkenberger.de`
 
 ## Architektur
@@ -28,11 +28,12 @@ Diese Anleitung beschreibt das Deployment von Strapi 5 auf einem Hostinger VPS m
 │                     PRODUKTION (VPS)                         │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────┐    ┌─────────┐    ┌──────────┐                 │
-│  │  Nginx  │ ←→ │ Strapi  │ ←→ │ Postgres │                 │
+│  │ Traefik │ ←→ │ Strapi  │ ←→ │ Postgres │                 │
 │  │  :443   │    │  :1337  │    │  :5432   │                 │
 │  └─────────┘    └─────────┘    └──────────┘                 │
-│       │                                                      │
-│  SSL-Zertifikat (Let's Encrypt)                             │
+│       │              │                                       │
+│  SSL (Let's Encrypt) │                                       │
+│  (externer Stack)    └── web (Docker Network)               │
 │                                                              │
 │  Dateien: .env (manuell erstellt), docker-compose.yml        │
 └─────────────────────────────────────────────────────────────┘
@@ -88,10 +89,15 @@ ufw allow 443/tcp
 ufw enable
 ```
 
-### 1.5 Certbot installieren (für SSL-Zertifikate)
+### 1.5 Traefik-Netzwerk prüfen
 ```bash
-apt install -y certbot
+# Prüfe ob das Traefik-Netzwerk existiert
+docker network ls | grep web
+
+# Falls nicht vorhanden, muss der Traefik-Stack zuerst eingerichtet werden
 ```
+
+> **Hinweis:** Der Traefik-Stack muss separat eingerichtet sein und das `web`-Netzwerk bereitstellen.
 
 ---
 
@@ -128,22 +134,12 @@ cd strapi-admin
 ```
 /opt/strapi-admin/
 ├── config/
-├── nginx/
-│   ├── nginx.conf
-│   └── conf.d/
-│       ├── strapi.conf
-│       └── strapi-initial.conf.template
 ├── src/
 ├── .env.example             ← Template für .env
-├── docker-compose.yml       ← Produktion (Strapi + Postgres + Nginx)
+├── docker-compose.yml       ← Produktion (Strapi + Postgres + Traefik Labels)
 ├── docker-compose.dev.yml   ← Entwicklung (nur Postgres)
 ├── Dockerfile
 └── package.json
-```
-
-### 3.2 Certbot-Verzeichnisse erstellen
-```bash
-mkdir -p certbot/conf certbot/www
 ```
 
 ---
@@ -178,6 +174,9 @@ DATABASE_USERNAME=strapi
 DATABASE_PASSWORD=DEIN_SICHERES_DB_PASSWORT
 DATABASE_SSL=false
 
+# Traefik Domain (für SSL-Zertifikat)
+DOMAIN=api.florianbirkenberger.de
+
 # Secrets (deine generierten Werte einfügen!)
 APP_KEYS=schlüssel1,schlüssel2,schlüssel3,schlüssel4
 API_TOKEN_SALT=dein_generierter_schlüssel
@@ -193,35 +192,22 @@ SEED_DATA=false
 **Speichern:** `Ctrl+X`, dann `Y`, dann `Enter`
 
 > ⚠️ **Wichtig:** Die `.env` Datei wird NICHT ins Git committed! Sie existiert nur auf dem Server.
-APP_KEYS=schlüssel1,schlüssel2,schlüssel3,schlüssel4
-API_TOKEN_SALT=dein_generierter_schlüssel
-ADMIN_JWT_SECRET=dein_generierter_schlüssel
-TRANSFER_TOKEN_SALT=dein_generierter_schlüssel
-JWT_SECRET=dein_generierter_schlüssel
-
-# Seeding (nur einmalig bei leerer DB auf true setzen)
-SEED_DATA=false
-```
-
-**Speichern:** `Ctrl+X`, dann `Y`, dann `Enter`
-
-> ⚠️ **Wichtig:** Die `.env` Datei wird NICHT ins Git committed! Sie existiert nur auf dem Server.
 
 ---
 
-## 5. SSL-Zertifikat einrichten
+## 5. Container starten
 
 **Alle Befehle im Projektordner `/opt/strapi-admin/` ausführen!**
 
-### 5.1 Initiale Nginx-Konfiguration (nur HTTP)
+### 5.1 Traefik-Netzwerk prüfen
 ```bash
-# Im Projektordner /opt/strapi-admin/
-cp nginx/conf.d/strapi-initial.conf.template nginx/conf.d/strapi.conf
+# Prüfe ob das externe Traefik-Netzwerk existiert
+docker network ls | grep web
 ```
 
-### 5.2 Container starten (ohne SSL)
+### 5.2 Container starten
 ```bash
-docker compose up -d postgres strapi nginx
+docker compose up -d
 ```
 
 ### 5.3 Warte bis Container laufen
@@ -232,86 +218,7 @@ docker compose logs -f strapi
 # Beenden mit Ctrl+C
 ```
 
-### 5.4 SSL-Zertifikat holen
-```bash
-# Stoppe nginx temporär
-docker compose stop nginx
-
-# Hole Zertifikat mit Certbot (standalone)
-certbot certonly --standalone \
-    --email deine-email@example.com \
-    --agree-tos \
-    --no-eff-email \
-    -d api.florianbirkenberger.de
-
-# Kopiere Zertifikate in Projektordner
-cp -rL /etc/letsencrypt/* certbot/conf/
-
-# Prüfe ob Zertifikat erstellt wurde
-ls -la certbot/conf/live/api.florianbirkenberger.de/
-```
-
-### 5.5 SSL-Konfiguration aktivieren
-```bash
-# Kopiere vollständige SSL-Konfiguration
-cat > nginx/conf.d/strapi.conf << 'EOF'
-upstream strapi {
-    server strapi:1337;
-}
-
-server {
-    listen 80;
-    listen [::]:80;
-    server_name api.florianbirkenberger.de;
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    http2 on;
-    server_name api.florianbirkenberger.de;
-
-    ssl_certificate /etc/letsencrypt/live/api.florianbirkenberger.de/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.florianbirkenberger.de/privkey.pem;
-
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:SSL:50m;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers off;
-
-    add_header Strict-Transport-Security "max-age=63072000" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-
-    client_max_body_size 256M;
-
-    location / {
-        proxy_pass http://strapi;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-EOF
-```
-
-### 5.6 Nginx neu starten
-```bash
-docker compose restart nginx
-```
+> **Hinweis:** SSL-Zertifikate werden automatisch von Traefik via Let's Encrypt erstellt.
 
 ---
 
@@ -456,47 +363,16 @@ docker compose up -d postgres
 docker compose up -d strapi
 ```
 
-### SSL-Zertifikat erneuern
+### Traefik erkennt Container nicht
 ```bash
-# Stoppe nginx temporär
-docker compose stop nginx
+# Prüfe ob Container im web-Netzwerk ist
+docker network inspect web
 
-# Erneuere Zertifikat
-certbot renew
+# Prüfe Traefik-Labels
+docker inspect strapi-app | grep -A 20 Labels
 
-# Kopiere neue Zertifikate
-cp -rL /etc/letsencrypt/* certbot/conf/
-
-# Starte nginx
-docker compose up -d nginx
-```
-
-### Nginx startet nicht (SSL-Fehler)
-```bash
-# Prüfe nginx Logs
-docker compose logs nginx --tail=20
-
-# Falls SSL-Zertifikat fehlt, nutze HTTP-only Config temporär
-cat > nginx/conf.d/strapi.conf << 'EOF'
-upstream strapi {
-    server strapi:1337;
-}
-
-server {
-    listen 80;
-    listen [::]:80;
-    server_name api.florianbirkenberger.de;
-
-    location / {
-        proxy_pass http://strapi;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-EOF
-docker compose restart nginx
+# Prüfe Traefik-Logs
+docker logs traefik 2>&1 | tail -50
 ```
 
 ### Speicherplatz prüfen
@@ -514,17 +390,21 @@ docker system prune -a  # Alte Images löschen
                         │
                         ▼
                    ┌─────────┐
-                   │  Nginx  │ :80/:443
-                   │ (Proxy) │
+                   │ Traefik │ :80/:443
+                   │ (Proxy) │ (externer Stack)
                    └────┬────┘
                         │
-         ┌──────────────┼──────────────┐
-         │              │              │
-         ▼              ▼              ▼
-    ┌─────────┐   ┌──────────┐   ┌──────────┐
-    │ Strapi  │   │ Certbot  │   │ Uploads  │
-    │  :1337  │   │  (SSL)   │   │ (Volume) │
-    └────┬────┘   └──────────┘   └──────────┘
+                   web network
+                        │
+         ┌──────────────┴──────────────┐
+         │                             │
+         ▼                             ▼
+    ┌─────────┐                   ┌──────────┐
+    │ Strapi  │                   │ Uploads  │
+    │  :1337  │                   │ (Volume) │
+    └────┬────┘                   └──────────┘
+         │
+    strapi-network
          │
          ▼
     ┌──────────┐
@@ -532,6 +412,10 @@ docker system prune -a  # Alte Images löschen
     │  :5432   │
     └──────────┘
 ```
+
+**Netzwerke:**
+- `web` - Externes Netzwerk für Traefik-Kommunikation
+- `strapi-network` - Internes Netzwerk für Strapi ↔ Postgres
 
 **URLs:**
 - Admin Panel: `https://api.florianbirkenberger.de/admin`
