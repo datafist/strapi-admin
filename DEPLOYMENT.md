@@ -444,8 +444,16 @@ docker compose logs strapi
 # Prüfe ob postgres läuft
 docker compose ps postgres
 
-# Prüfe Credentials
-docker compose exec postgres psql -U strapi -d strapi
+# Prüfe Credentials in .env
+cat .env | grep DATABASE_PASSWORD
+
+# Prüfe ob Container das gleiche Passwort hat
+docker compose exec postgres psql -U strapi -d strapi -c "SELECT version();"
+
+# Falls Auth-Fehler: Container neu starten (löscht alte DB)
+docker compose down -v
+docker compose up -d postgres
+docker compose up -d strapi
 ```
 
 ### SSL-Zertifikat erneuern
