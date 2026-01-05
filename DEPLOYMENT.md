@@ -453,36 +453,7 @@ docker compose exec postgres psql -U strapi -d strapi -c "SELECT version();"
 # Falls Auth-Fehler: Container neu starten (löscht alte DB)
 docker compose down -v
 docker compose up -d postgres
-
-# Warte bis postgres bereit ist
-docker compose logs postgres
-
-# Dann Strapi starten
 docker compose up -d strapi
-```
-
-### Nach `docker system prune -af --volumes`
-```bash
-# Alle Container und Volumes wurden gelöscht
-# Neu starten:
-cd /opt/strapi-admin
-
-# .env prüfen/korrigieren
-nano .env
-# Stelle sicher dass DATABASE_PASSWORD=strapi_password steht
-
-# Container neu starten
-docker compose down -v
-docker compose up -d postgres
-
-# Warte 30 Sekunden bis postgres bereit ist
-sleep 30
-
-# Strapi mit Seeding starten
-SEED_DATA=true docker compose up -d strapi nginx
-
-# Logs prüfen
-docker compose logs -f strapi
 ```
 
 ### SSL-Zertifikat erneuern
