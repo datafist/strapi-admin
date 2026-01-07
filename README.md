@@ -47,10 +47,10 @@ strapi-admin/
 ├── config/                  # Strapi-Konfiguration
 ├── src/
 │   ├── api/                 # Content-Types (Team, Player, Match, etc.)
+│   │   └── health/          # Health-Check Endpoint für Docker
 │   ├── components/          # Wiederverwendbare Komponenten (SEO, etc.)
 │   └── index.ts             # Bootstrap & Seeding
-├── nginx/                   # Nginx-Konfiguration (Produktion)
-├── docker-compose.yml       # Produktion (Strapi + Postgres + Nginx)
+├── docker-compose.yml       # Produktion (Strapi + Postgres + Traefik)
 ├── docker-compose.dev.yml   # Entwicklung (nur PostgreSQL)
 ├── Dockerfile               # Produktion Image
 ├── .env.example             # Template für Umgebungsvariablen

@@ -37,7 +37,8 @@ export default {
             socialLinks: [
               { platform: 'Facebook', url: 'https://facebook.com/volleystars' },
               { platform: 'Instagram', url: 'https://instagram.com/volleystars' }
-            ]
+            ],
+            publishedAt: new Date()
           }
         });
 
@@ -182,7 +183,8 @@ export default {
               metaTitle: 'VV Volleystars Musterstadt - Startseite',
               metaDescription: 'Offizielle Website des Volleyballvereins Volleystars Musterstadt. News, Teams, Spielpläne und mehr.',
               keywords: 'volleyball, volleystars, musterstadt, verein'
-            }
+            },
+            publishedAt: new Date()
           }
         });
 

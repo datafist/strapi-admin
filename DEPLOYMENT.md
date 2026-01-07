@@ -368,12 +368,22 @@ docker compose up -d strapi
 # Prüfe ob Container im web-Netzwerk ist
 docker network inspect web
 
+# Prüfe ob Container "healthy" ist (wichtig für Traefik!)
+docker ps
+docker inspect strapi-app --format '{{.State.Health.Status}}'
+
+# Health-Check manuell testen
+docker exec strapi-app wget -q --spider http://localhost:1337/api/_health
+
 # Prüfe Traefik-Labels
 docker inspect strapi-app | grep -A 20 Labels
 
 # Prüfe Traefik-Logs
 docker logs traefik 2>&1 | tail -50
 ```
+
+> **Hinweis:** Traefik registriert Container erst, wenn sie "healthy" sind. 
+> Der Strapi-Container hat einen Health-Check mit 120s `start_period` - warte bis der Container "healthy" ist.
 
 ### Speicherplatz prüfen
 ```bash
@@ -420,4 +430,5 @@ docker system prune -a  # Alte Images löschen
 **URLs:**
 - Admin Panel: `https://strapi.florianbirkenberger.de/admin`
 - REST API: `https://strapi.florianbirkenberger.de/api/`
+- Health-Check: `https://strapi.florianbirkenberger.de/api/_health`
 - Uploads: `https://strapi.florianbirkenberger.de/uploads/`

@@ -64,9 +64,5 @@ ENV PORT=1337
 
 EXPOSE 1337
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:1337/_health || exit 1
-
 # Starte Strapi
 CMD ["npm", "run", "start"]
