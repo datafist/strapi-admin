@@ -49,6 +49,6 @@ docker-compose logs --tail=20
 
 echo ""
 echo "=== Deployment abgeschlossen! ==="
-echo "Admin Panel: https://api.florianbirkenberger.de/admin"
+echo "Admin Panel: https://strapi.florianbirkenberger.de/admin"
 echo ""
 echo "Logs ansehen: docker-compose logs -f strapi"

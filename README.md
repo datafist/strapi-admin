@@ -95,7 +95,7 @@ strapi-admin/
 
 Siehe [DEPLOYMENT.md](DEPLOYMENT.md) für die vollständige Anleitung zum Deployment auf einem VPS mit Docker.
 
-**Produktion:** https://api.florianbirkenberger.de
+**Produktion:** https://strapi.florianbirkenberger.de
 
 ## 📚 Dokumentation
 

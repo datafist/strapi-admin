@@ -8,7 +8,7 @@ upstream strapi {
 server {
     listen 80;
     listen [::]:80;
-    server_name api.florianbirkenberger.de;
+    server_name strapi.florianbirkenberger.de;
 
     # Certbot Challenge
     location /.well-known/acme-challenge/ {

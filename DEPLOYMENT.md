@@ -7,7 +7,7 @@ Diese Anleitung beschreibt das Deployment von Strapi 5 auf einem Hostinger VPS m
 - **PostgreSQL** als Datenbank (gleiche DB wie lokal)
 - **Traefik** als Reverse Proxy (externer Stack)
 - **Let's Encrypt** für SSL-Zertifikate (via Traefik)
-- **Domain**: `api.florianbirkenberger.de`
+- **Domain**: `strapi.florianbirkenberger.de`
 
 ## Architektur
 
@@ -110,11 +110,11 @@ Im Hostinger DNS-Manager oder deinem Domain-Provider:
 | A | api | DEINE_VPS_IP | 3600 |
 
 **Beispiel:**
-- `api.florianbirkenberger.de` → `123.456.789.0`
+- `strapi.florianbirkenberger.de` → `123.456.789.0`
 
 **Warte 5-30 Minuten** bis DNS propagiert ist. Prüfen mit:
 ```bash
-dig api.florianbirkenberger.de +short
+dig strapi.florianbirkenberger.de +short
 ```
 
 ---
@@ -163,7 +163,7 @@ nano .env
 NODE_ENV=production
 HOST=0.0.0.0
 PORT=1337
-PUBLIC_URL=https://api.florianbirkenberger.de
+PUBLIC_URL=https://strapi.florianbirkenberger.de
 
 # Database (Achtung: HOST ist "postgres", nicht "localhost"!)
 DATABASE_CLIENT=postgres
@@ -175,7 +175,7 @@ DATABASE_PASSWORD=DEIN_SICHERES_DB_PASSWORT
 DATABASE_SSL=false
 
 # Traefik Domain (für SSL-Zertifikat)
-DOMAIN=api.florianbirkenberger.de
+DOMAIN=strapi.florianbirkenberger.de
 
 # Secrets (deine generierten Werte einfügen!)
 APP_KEYS=schlüssel1,schlüssel2,schlüssel3,schlüssel4
@@ -239,7 +239,7 @@ docker compose logs -f strapi
 ### 6.3 Admin-Panel öffnen
 Öffne im Browser:
 ```
-https://api.florianbirkenberger.de/admin
+https://strapi.florianbirkenberger.de/admin
 ```
 
 **Ersten Admin-User erstellen:**
@@ -250,7 +250,7 @@ https://api.florianbirkenberger.de/admin
 
 ### 6.4 API testen
 ```bash
-curl https://api.florianbirkenberger.de/api/achievements
+curl https://strapi.florianbirkenberger.de/api/achievements
 ```
 
 ---
@@ -418,6 +418,6 @@ docker system prune -a  # Alte Images löschen
 - `strapi-network` - Internes Netzwerk für Strapi ↔ Postgres
 
 **URLs:**
-- Admin Panel: `https://api.florianbirkenberger.de/admin`
-- REST API: `https://api.florianbirkenberger.de/api/`
-- Uploads: `https://api.florianbirkenberger.de/uploads/`
+- Admin Panel: `https://strapi.florianbirkenberger.de/admin`
+- REST API: `https://strapi.florianbirkenberger.de/api/`
+- Uploads: `https://strapi.florianbirkenberger.de/uploads/`

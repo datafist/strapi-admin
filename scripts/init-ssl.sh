@@ -6,7 +6,7 @@
 
 set -e
 
-DOMAIN="api.florianbirkenberger.de"
+DOMAIN="strapi.florianbirkenberger.de"
 EMAIL="your-email@example.com"  # ÄNDERN!
 
 echo "=== SSL-Zertifikat Setup für $DOMAIN ==="
@@ -46,7 +46,7 @@ docker-compose run --rm certbot certonly \
 # Ersetze mit vollständiger SSL-Konfiguration
 echo "Aktiviere SSL-Konfiguration..."
 cat > nginx/conf.d/strapi.conf << 'EOF'
-# Strapi API - api.florianbirkenberger.de
+# Strapi API - strapi.florianbirkenberger.de
 
 upstream strapi {
     server strapi:1337;
@@ -55,7 +55,7 @@ upstream strapi {
 server {
     listen 80;
     listen [::]:80;
-    server_name api.florianbirkenberger.de;
+    server_name strapi.florianbirkenberger.de;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -69,10 +69,10 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name api.florianbirkenberger.de;
+    server_name strapi.florianbirkenberger.de;
 
-    ssl_certificate /etc/letsencrypt/live/api.florianbirkenberger.de/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.florianbirkenberger.de/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/strapi.florianbirkenberger.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/strapi.florianbirkenberger.de/privkey.pem;
 
     ssl_session_timeout 1d;
     ssl_session_cache shared:SSL:50m;
