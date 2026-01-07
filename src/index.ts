@@ -25,7 +25,7 @@ export default {
       
       if (hasData.length === 0) {
         console.log('🌱 Seeding test data...');
-        
+
         // 1. Club Info erstellen
         await strapi.documents('api::club-info.club-info').create({
           data: {
@@ -37,9 +37,9 @@ export default {
             socialLinks: [
               { platform: 'Facebook', url: 'https://facebook.com/volleystars' },
               { platform: 'Instagram', url: 'https://instagram.com/volleystars' }
-            ],
-            publishedAt: new Date()
-          }
+            ]
+          },
+          status: 'published'
         });
 
         // 2. Coaches erstellen
@@ -47,18 +47,18 @@ export default {
           data: {
             firstName: 'Michael',
             lastName: 'Schmidt',
-            role: 'Head Coach',
-            publishedAt: new Date()
-          }
+            role: 'Head Coach'
+          },
+          status: 'published'
         });
 
         const coach2 = await strapi.documents('api::coach.coach').create({
           data: {
             firstName: 'Sarah',
             lastName: 'Müller',
-            role: 'Co-Trainer',
-            publishedAt: new Date()
-          }
+            role: 'Co-Trainer'
+          },
+          status: 'published'
         });
 
         // 3. Spieler erstellen
@@ -74,9 +74,9 @@ export default {
               lastName: lastNames[i],
               birthDate: new Date(2000 + i, i, 15),
               position: positions[i % positions.length],
-              jerseyNumber: i + 1,
-              publishedAt: new Date()
-            }
+              jerseyNumber: i + 1
+            },
+            status: 'published'
           });
           players.push(player.documentId);
         }
@@ -89,9 +89,9 @@ export default {
             category: 'Damen',
             season: '2024/2025',
             players: players.slice(0, 6),
-            coaches: [coach1.documentId],
-            publishedAt: new Date()
-          }
+            coaches: [coach1.documentId]
+          },
+          status: 'published'
         });
 
         const team2 = await strapi.documents('api::team.team').create({
@@ -101,12 +101,12 @@ export default {
             category: 'Damen',
             season: '2024/2025',
             players: players.slice(4, 8),
-            coaches: [coach2.documentId],
-            publishedAt: new Date()
-          }
+            coaches: [coach2.documentId]
+          },
+          status: 'published'
         });
 
-        // 5. Matches erstellen (mit neuer Struktur)
+        // 5. Matches erstellen
         await strapi.documents('api::match.match').create({
           data: {
             date: new Date(2024, 11, 15, 19, 0),
@@ -115,9 +115,9 @@ export default {
             opponent: 'SV Musterstadt Volleyball',
             location: 'Sporthalle Musterstadt',
             result: '3:1 (25:20, 23:25, 25:18, 25:22)',
-            report: '# Spannendes Derby!\n\nEin packender Auftritt unserer Damen 1 gegen den SV Musterstadt.',
-            publishedAt: new Date()
-          }
+            report: '# Spannendes Derby!\n\nEin packender Auftritt unserer Damen 1 gegen den SV Musterstadt.'
+          },
+          status: 'published'
         });
 
         await strapi.documents('api::match.match').create({
@@ -126,9 +126,9 @@ export default {
             homeGame: false,
             team: team1.documentId,
             opponent: 'TSV Nachbarstadt',
-            location: 'Auswärtshalle Nachbarstadt',
-            publishedAt: new Date()
-          }
+            location: 'Auswärtshalle Nachbarstadt'
+          },
+          status: 'published'
         });
 
         await strapi.documents('api::match.match').create({
@@ -137,9 +137,9 @@ export default {
             homeGame: true,
             team: team2.documentId,
             opponent: 'VC Regionalteam',
-            location: 'Sporthalle Musterstadt',
-            publishedAt: new Date()
-          }
+            location: 'Sporthalle Musterstadt'
+          },
+          status: 'published'
         });
 
         // 6. News erstellen
@@ -153,9 +153,9 @@ export default {
               metaTitle: 'Erfolgreicher Saisonstart - VV Volleystars',
               metaDescription: 'Die Damen 1 starten erfolgreich in die neue Saison mit einem 3:0 Sieg.',
               keywords: 'volleyball, saisonstart, bundesliga'
-            },
-            publishedAt: new Date()
-          }
+            }
+          },
+          status: 'published'
         });
 
         await strapi.documents('api::news-article.news-article').create({
@@ -168,9 +168,9 @@ export default {
               metaTitle: 'Neuer Co-Trainer - VV Volleystars',
               metaDescription: 'Sarah Müller verstärkt unser Trainerteam als Co-Trainerin.',
               keywords: 'volleyball, trainer, team'
-            },
-            publishedAt: new Date()
-          }
+            }
+          },
+          status: 'published'
         });
 
         // 7. Homepage erstellen
@@ -183,9 +183,9 @@ export default {
               metaTitle: 'VV Volleystars Musterstadt - Startseite',
               metaDescription: 'Offizielle Website des Volleyballvereins Volleystars Musterstadt. News, Teams, Spielpläne und mehr.',
               keywords: 'volleyball, volleystars, musterstadt, verein'
-            },
-            publishedAt: new Date()
-          }
+            }
+          },
+          status: 'published'
         });
 
         // 8. Pages erstellen
@@ -198,42 +198,42 @@ export default {
               metaTitle: 'Über Uns - VV Volleystars',
               metaDescription: 'Erfahren Sie mehr über die Geschichte und Philosophie der Volleystars Musterstadt.',
               keywords: 'volleyball, verein, geschichte, musterstadt'
-            },
-            publishedAt: new Date()
-          }
+            }
+          },
+          status: 'published'
         });
 
         // 9. Achievements erstellen
         await strapi.documents('api::achievement.achievement').create({
           data: {
             name: 'Deutscher Meister',
-            season: '2023/2024',
-            publishedAt: new Date()
-          }
+            season: '2023/2024'
+          },
+          status: 'published'
         });
 
         await strapi.documents('api::achievement.achievement').create({
           data: {
             name: 'DVV-Pokalsieger',
-            season: '2022/2023',
-            publishedAt: new Date()
-          }
+            season: '2022/2023'
+          },
+          status: 'published'
         });
 
         await strapi.documents('api::achievement.achievement').create({
           data: {
             name: 'Landesmeister Bayern',
-            season: '2021/2022',
-            publishedAt: new Date()
-          }
+            season: '2021/2022'
+          },
+          status: 'published'
         });
 
         await strapi.documents('api::achievement.achievement').create({
           data: {
             name: 'Aufstieg 1. Bundesliga',
-            season: '2020/2021',
-            publishedAt: new Date()
-          }
+            season: '2020/2021'
+          },
+          status: 'published'
         });
 
         console.log('✅ Test data seeded successfully!');
