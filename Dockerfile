@@ -33,6 +33,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
+# Installiere wget für Health-Checks
+RUN apk add --no-cache wget
+
 # Erstelle non-root User für Sicherheit
 RUN addgroup --system --gid 1001 strapi
 RUN adduser --system --uid 1001 strapi
