@@ -81,7 +81,7 @@ strapi-admin/
 
 | Name | Beschreibung |
 |------|--------------|
-| Team | Mannschaften (Damen 1, etc.) |
+| Team | Mannschaften (Damen 1...) |
 | Player | Spielerinnen mit Position, Nummer |
 | Coach | Trainer |
 | Match | Spielplan & Ergebnisse |
